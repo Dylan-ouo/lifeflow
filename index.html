@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LifeFlow Focus</title>
+    <title>LifeFlow</title>
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,76 +14,58 @@
             --green-zone: rgba(180, 210, 185, 0.75);
             --blue-zone: rgba(175, 195, 220, 0.75);
             --text-main: #3A3A3C;
-            --ios-gray: #8E8E93;
-            --danger: #FF3B30;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text-main); height: 100vh; overflow: hidden; }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-
-        body {
-            margin: 0; padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* --- 完美回归：Version 4 核心动画 --- */
+        /* V4 灵魂动画 */
         @keyframes floatV4 {
             0%, 100% { transform: translate(0, 0) scale(1); }
             33% { transform: translate(5px, -10px) scale(1.01); }
             66% { transform: translate(-5px, -5px) scale(0.99); }
         }
 
-        #home-screen {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease;
-        }
-
+        #home-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s; }
         .portal-layout { display: flex; flex-direction: column; align-items: center; gap: 40px; }
         .row-top { display: flex; gap: 30px; }
 
-        /* 回归 V4 的球体比例与滤镜 */
         .bubble {
             width: 140px; height: 140px; border-radius: 50%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-weight: 600; font-size: 18px;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.04);
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            cursor: pointer; text-align: center;
+            font-weight: 600; font-size: 18px; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.04); text-align: center;
         }
 
-        /* 应用 V4 动画频率与延迟 */
         .bubble-red { background: var(--red-zone); animation: floatV4 7s infinite ease-in-out; }
         .bubble-green { background: var(--green-zone); animation: floatV4 8s infinite ease-in-out -1.5s; }
         .bubble-blue { background: var(--blue-zone); animation: floatV4 9s infinite ease-in-out -3s; }
 
-        /* 展开动画逻辑 */
-        .bubble.expand {
-            position: fixed !important; top: 0 !important; left: 0 !important;
-            width: 100vw !important; height: 100vh !important;
-            border-radius: 0 !important; z-index: 100; animation: none !important;
-        }
+        /* 展开效果 */
+        .bubble.expand { position: fixed !important; top:0; left:0; width:100vw !important; height:100vh !important; border-radius:0 !important; z-index:200; animation:none !important; }
 
-        /* --- 二级页面样式 (保持 Version 7 的管理功能) --- */
-        .page {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 110;
-            display: none; flex-direction: column;
-            padding: calc(75px + env(safe-area-inset-top)) 20px 40px;
-            overflow-y: auto;
-        }
-        .page.active { display: flex; }
+        /* 页面 */
+        .page { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:210; display:none; flex-direction:column; padding: calc(80px + env(safe-area-inset-top)) 20px 40px; overflow-y:auto; }
+        .page.active { display:flex; }
+        .btn-back { position:fixed; top:calc(20px + env(safe-area-inset-top)); left:20px; color:#007AFF; border:none; background:none; font-size:17px; z-index:220; font-weight:500; }
+        
+        .card { background:white; border-radius:24px; padding:20px; margin-bottom:15px; box-shadow:0 4px 15px rgba(0,0,0,0.02); position: relative; }
+        .btn-action { width:100%; padding:15px; border-radius:14px; border:none; font-size:16px; font-weight:600; margin-top:10px; }
+        .btn-del { position: absolute; top: 15px; right: 15px; color: #FF3B30; opacity: 0.3; border:none; background:none; font-size:12px; }
+        
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 25px; }
+        .sub-data { font-size: 11px; opacity: 0.7; margin-top: 5px; font-weight: 400; }
+    </style>
+</head>
+<body>
 
-        .btn-back {
-            position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 20px;
-            font-size: 16px; font-weight: 500; border: none; background: none; color: #007AFF; z-index: 120;
-        }
+<div id="home-screen">
+    <div class="portal-layout">
+        <div class="row-top">
+            <div class="bubble bubble-red" onclick="openPage('red', this)">消耗区<span id="h-red" class="sub-data">¥ 0.00</span></div>
+            <div class="bubble bubble-green" onclick="openPage('green', this)">达成区<span id="h-green" class="sub-data">0%</span></div>
+        </div>
+        <div class="bubble bubble-blue" onclick="openPage('blue', this)">复盘区<span class="sub-data">历史记录</span></div>
+    </div>
+</div>
 
-        h1 { font-size: 32px; font-weight: 80
+<div id="page-red" class="page"><button class="btn-back" onclick="closePage('red')">← 完成</button><h1>消耗记录</h1><div id="red-list"></div><button onclick="addItem('red')" style="width:100%;padding:
