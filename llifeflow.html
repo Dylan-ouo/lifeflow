@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LifeFlow Ultra</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --bg: #FBFBFD;
+            --red-zone: rgba(255, 180, 190, 0.7);
+            --green-zone: rgba(180, 210, 185, 0.7);
+            --blue-zone: rgba(175, 195, 220, 0.7);
+            --text-main: #3A3A3C;
+            --ios-gray: #8E8E93;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- 主页布局 --- */
+        #home-screen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .portal-layout { display: flex; flex-direction: column; align-items: center; gap: 40px; }
+        .row-top { display: flex; gap: 30px; }
+
+        .bubble {
+            width: 140px; height: 140px; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 18px;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.04);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer; text-align: center;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(5px, -10px) scale(1.01); }
+            66% { transform: translate(-5px, -5px) scale(0.99); }
+        }
+
+        .bubble-red { background: var(--red-zone); animation: float 7s infinite ease-in-out; }
+        .bubble-green { background: var(--green-zone); animation: float 8s infinite ease-in-out -1.5s; }
+        .bubble-blue { background: var(--blue-zone); animation: float 9s infinite ease-in-out -3s; }
+
+        .bubble.expand {
+            position: fixed !important; top: 0 !important; left: 0 !important;
+            width: 100vw !important; height: 100vh !important;
+            border-radius: 0 !important; z-index: 100; animation: none !important;
+        }
+
+        /* --- 二级页面 --- */
+        .page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 110;
+            display: none; flex-direction: column;
+            padding: calc(70px + env(safe-area-inset-top)) 20px 40px;
+            overflow-y: auto; opacity: 0; transition: opacity 0.4s ease;
+        }
+
+        .page.active { display: flex; opacity: 1; }
+
+        .btn-back {
+            position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 20px;
+            font-size: 16px; font-weight: 500; border: none; background: none; z-index: 120;
+        }
+
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 20px; }
+
+        /* 复盘区特有样式 */
+        .insight-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+            border-radius: 24px; padding: 25px; margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .insight-stat { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .stat-label { color: var(--ios-gray); font-size: 14px; }
+        .stat-value { font-weight: 700; font-size: 16px; }
+
+        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .btn-action { width: 100%; padding: 15px; border-radius: 14px; border: none; font-size: 16px; font-weight: 600; margin-top: 10px; }
+        .btn-add-item { background: rgba(0,0,0,0.05); color: var(--text-main); border: 2px dashed rgba(0,0,0,0.1); border-radius: 20px; padding: 15px; margin-top: 10px; width:100%; font-weight: 600; }
+        .progress-bar { height: 8px; background: #F2F2F7; border-radius: 4px; margin: 12px 0; overflow: hidden; }
+        .progress-fill { height: 100%; transition: width 0.5s; }
+        .log-item { padding: 12px 0; border-bottom: 0.5px solid #EEE; }
+    </style>
+</head>
+<body>
+
+    <div id="home-screen">
+        <div class="portal-layout">
+            <div class="row-top">
+                <div class="bubble bubble-red" onclick="openPage('red', this)">消耗区<span style="font-size:11px; opacity:0.7; font-weight:400; margin-top:5px;">自律额度</span></div>
+                <div class="bubble bubble-green" onclick="openPage('green', this)">达成区<span style="font-size:11px; opacity:0.7; font-weight:400; margin-top:5px;">成长目标</span></div>
+            </div>
+            <div class="bubble bubble-blue" onclick="openPage('blue', this)">复盘区<span style="font-size:11px; opacity:0.7; font-weight:400; margin-top:5px;">数据与总结</span></div>
+        </div>
+    </div>
+
+    <div id="page-red" class="page">
+        <button class="btn-back" onclick="closePage('red')">← 退出</button>
+        <h1>消耗额度</h1>
+        <div id="red-list"></div>
+        <button class="btn-add-item" onclick="addItem('red')">+ 新增限额项目</button>
+    </div>
+
+    <div id="page-green" class="page">
+        <button class="btn-back" onclick="closePage('green')">← 退出</button>
+        <h1>成长目标</h1>
+        <div id="green-list"></div>
+        <button class="btn-add-item" onclick="addItem('green')">+ 新增目标项目</button>
+    </div>
+
+    <div id="page-blue" class="page">
+        <button class="btn-back" onclick="closePage('blue')">← 退出</button>
+        <h1>本月总结</h1>
+        
+        <div class="insight-card">
+            <div style="font-weight:800; font-size:20px; margin-bottom:20px; display:flex; align-items:center;">📊 自动复盘简报</div>
+            <div id="insight-content">
+                </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin:0 0 15px 0; font-size:17px;">📝 时光琐记</h3>
+            <textarea id="note-input" style="width:100%; height:80px; border:1px solid #eee; border-radius:12px; padding:10px; font-size:16px;" placeholder="记录当下的感悟..."></textarea>
+            <button class="btn-action" style="background:var(--blue-zone)" onclick="addNote()">存入时光轴</button>
+        </div>
+        
+        <div id="history-list" style="padding-bottom:100px;"></div>
+    </div>
+
+    <script>
+        let state = {
+            red: [], green: [], notes: [], 
+            historyRecords: [], // 用于存储往月复盘
+            month: new Date().getMonth()
+        };
+
+        function init() {
+            const saved = localStorage.getItem('lifeflow_v4');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.month !== new Date().getMonth()) {
+                    // 执行跨月自动复盘归档
+                    archiveCurrentMonth(parsed);
+                    state = { red: parsed.red.map(i => ({...i, used:0})), green: parsed.green.map(i => ({...i, done:0})), notes: [], historyRecords: parsed.historyRecords || [], month: new Date().getMonth() };
+                } else {
+                    state = parsed;
+                }
+            }
+            if (state.red.length === 0) state.red.push({id: 1, name: '奶茶', limit: 4, used: 0});
+            if (state.green.length === 0) state.green.push({id: 2, name: '做饭', goal: 20, done: 0});
+            refreshUI();
+        }
+
+        // 核心：归档逻辑
+        function archiveCurrentMonth(oldData) {
+            const report = {
+                date: new Date().toLocaleDateString(),
+                redStats: oldData.red.map(i => `${i.name}:${i.used}/${i.limit}`),
+                greenStats: oldData.green.map(i => `${i.name}:${i.done}/${i.goal}`)
+            };
+            state.historyRecords = oldData.historyRecords || [];
+            state.historyRecords.unshift(report);
+        }
+
+        function save() { localStorage.setItem('lifeflow_v4', JSON.stringify(state)); }
+
+        function openPage(c, el) {
+            el.classList.add('expand');
+            if(c === 'blue') generateInsight(); // 进入复盘页前生成简报
+            setTimeout(() => {
+                document.getElementById(`page-${c}`).classList.add('active');
+                document.getElementById('home-screen').style.opacity = '0';
+            }, 400);
+        }
+
+        function closePage(c) {
+            document.getElementById(`page-${c}`).classList.remove('active');
+            document.getElementById('home-screen').style.opacity = '1';
+            document.querySelector(`.bubble-${c}`).classList.remove('expand');
+        }
+
+        // 自动复盘算法
+        function generateInsight() {
+            const container = document.getElementById('insight-content');
+            let redSummary = state.red.map(i => {
+                const left = i.limit - i.used;
+                const status = left <= 0 ? "⚠️ 已超标" : `剩余 ${left} 次`;
+                return `<div class="insight-stat"><span class="stat-label">${i.name}</span><span class="stat-value">${status}</span></div>`;
+            }).join('');
+
+            let greenSummary = state.green.map(i => {
+                const p = Math.round((i.done/i.goal)*100);
+                return `<div class="insight-stat"><span class="stat-label">${i.name}</span><span class="stat-value">${p}% 完成</span></div>`;
+            }).join('');
+
+            const score = calculateScore();
+
+            container.innerHTML = `
+                <div style="font-size:13px; color:var(--ios-gray); margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                    本月整体自律得分：<b style="font-size:18px; color:var(--text-main)">${score}</b>
+                </div>
+                <div style="margin-top:10px;">${redSummary}</div>
+                <div style="margin-top:10px; border-top:1px solid #eee; pt:10px;">${greenSummary}</div>
+            `;
+        }
+
+        function calculateScore() {
+            // 一个简单的算法：达成区完成率平均值 - 消耗区浪费率平均值
+            if (state.red.length === 0 && state.green.length === 0) return 100;
+            let gP = state.green.reduce((acc, i) => acc + (i.done/i.goal), 0) / (state.green.length || 1);
+            let rP = state.red.reduce((acc, i) => acc + (i.used/i.limit), 0) / (state.red.length || 1);
+            let final = Math.round((gP * 100) - (rP * 20) + 50); 
+            return Math.min(Math.max(final, 0), 100);
+        }
+
+        function addItem(type) {
+            const name = prompt("项目名称:"); if (!name) return;
+            const target = prompt("次数设置:", "10"); if (!target || isNaN(target)) return;
+            state[type].push({id: Date.now(), name, limit: parseInt(target), goal: parseInt(target), used: 0, done: 0});
+            save(); refreshUI();
+        }
+
+        function doAction(type, id) {
+            const item = state[type].find(i => i.id === id);
+            if (type === 'red') {
+                if (item.used >= item.limit) return alert("额度已用完！");
+                item.used++;
+            } else { item.done++; }
+            save(); refreshUI();
+        }
+
+        function addNote() {
+            const input = document.getElementById('note-input');
+            if (!input.value.trim()) return;
+            state.notes.unshift({ text: input.value, time: new Date().toLocaleString() });
+            input.value = ''; save(); refreshUI();
+        }
+
+        function refreshUI() {
+            document.getElementById('red-list').innerHTML = state.red.map(i => `
+                <div class="card">
+                    <div style="font-weight:700;">${i.name}</div>
+                    <div style="font-size:20px; margin:10px 0;">剩 ${i.limit - i.used} 次</div>
+                    <button class="btn-action" style="background:var(--red-zone)" onclick="doAction('red', ${i.id})">记录支出</button>
+                </div>
+            `).join('');
+
+            document.getElementById('green-list').innerHTML = state.green.map(i => `
+                <div class="card">
+                    <div style="font-weight:700;">${i.name}</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${(i.done/i.goal)*100}%; background:var(--green-zone)"></div></div>
+                    <button class="btn-action" style="background:var(--green-zone)" onclick="doAction('green', ${i.id})">完成打卡 (${i.done}/${i.goal})</button>
+                </div>
+            `).join('');
+
+            document.getElementById('history-list').innerHTML = state.notes.map(n => `<div class="log-item"><div style="font-size:11px; color:#999">${n.time}</div>${n.text}</div>`).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>
