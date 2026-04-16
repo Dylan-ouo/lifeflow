@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LifeFlow Hybrid</title>
+    <title>LifeFlow V7.2</title>
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,6 +14,7 @@
             --green-zone: rgba(180, 210, 185, 0.75);
             --blue-zone: rgba(175, 195, 220, 0.75);
             --text-main: #3A3A3C;
+            --danger: #FF3B30;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -24,7 +25,7 @@
             height: 100vh; overflow: hidden;
         }
 
-        /* --- 核心复刻：版本 4 浮动动画 [cite: 149, 150, 151] --- */
+        /* --- 核心复刻：版本 4 浮动动画 --- */
         @keyframes floatV4 {
             0%, 100% { transform: translate(0, 0) scale(1); }
             33% { transform: translate(5px, -10px) scale(1.01); }
@@ -50,14 +51,14 @@
         }
         .bubble:active { transform: scale(0.92); }
 
-        /* 应用版本 4 的动画频率与延迟 [cite: 152, 153, 154] */
+        /* 应用版本 4 的动画频率与延迟 */
         .bubble-red { background: var(--red-zone); animation: floatV4 7s infinite ease-in-out; }
         .bubble-green { background: var(--green-zone); animation: floatV4 8s infinite ease-in-out -1.5s; }
         .bubble-blue { background: var(--blue-zone); animation: floatV4 9s infinite ease-in-out -3s; }
 
         .bubble span { font-size: 11px; opacity: 0.6; margin-top: 5px; font-weight: 400; }
 
-        /* 二级页面基础样式 [cite: 228, 230] */
+        /* 二级页面基础样式 */
         .page {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 999;
@@ -72,8 +73,22 @@
             font-size: 17px; font-weight: 600; border: none; background: none; color: #007AFF; z-index: 1000;
         }
 
-        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); position: relative; }
-        .item-title { font-size: 18px; font-weight: 700; display: flex; justify-content: space-between; }
+        /* 列表卡片与删除按钮样式 */
+        .card { 
+            background: white; border-radius: 24px; padding: 20px; margin-bottom: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02); position: relative; 
+        }
+        
+        .btn-delete {
+            position: absolute; top: 15px; right: 15px;
+            width: 26px; height: 26px; border-radius: 13px;
+            background: rgba(255, 59, 48, 0.1); color: var(--danger);
+            border: none; font-size: 14px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+
+        .item-title { font-size: 18px; font-weight: 700; padding-right: 30px; }
         .item-money { font-size: 14px; color: #FF9500; margin-top: 5px; }
         
         .btn-action { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 16px; font-weight: 700; margin-top: 15px; }
@@ -116,24 +131,24 @@
         <div id="insight-area"></div>
         <div class="card">
             <h3>🕰️ 往期历史</h3>
-            <div id="history-archive" style="font-size:14px; color:#666;">暂无历史归档</div>
+            <div id="history-archive" style="font-size:14px; color:#666;">暂无历史归档数据</div>
         </div>
     </div>
 
     <script>
-        // --- 版本 5 核心逻辑 [cite: 244, 245] ---
+        // --- 核心逻辑 ---
         let state = {
             red: [], green: [], history: [], 
             lastUpdateMonth: new Date().getMonth()
         };
 
         function init() {
-            const saved = localStorage.getItem('lifeflow_hybrid');
+            const saved = localStorage.getItem('lifeflow_v72_storage');
             if (saved) {
                 let parsed = JSON.parse(saved);
                 const currentMonth = new Date().getMonth();
                 if (parsed.lastUpdateMonth !== currentMonth) {
-                    archiveMonth(parsed); // 跨月自动归档 [cite: 245, 249]
+                    archiveMonth(parsed); // 跨月自动归档
                     state.red = parsed.red.map(i => ({...i, used: 0, totalCost: 0}));
                     state.green = parsed.green.map(i => ({...i, done: 0}));
                     state.history = parsed.history || [];
@@ -142,8 +157,9 @@
                     state = parsed;
                 }
             } else {
-                state.red = [{id: 1, name: '零食/奶茶', limit: 8, used: 0, totalCost: 0}];
-                state.green = [{id: 2, name: '健身运动', goal: 20, done: 0}];
+                // 默认初始数据
+                state.red = [{id: 1, name: '零食奶茶', limit: 8, used: 0, totalCost: 0}];
+                state.green = [{id: 2, name: '健身运动', goal: 15, done: 0}];
             }
             refreshUI();
         }
@@ -151,16 +167,15 @@
         function archiveMonth(oldData) {
             const months = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
             const record = {
-                title: months[oldData.lastUpdateMonth] + "总结",
+                title: months[oldData.lastUpdateMonth] + "概览",
                 cost: oldData.red.reduce((sum, i) => sum + (i.totalCost || 0), 0).toFixed(2),
-                achieve: oldData.green.length ? 
-                    Math.round(oldData.green.reduce((sum, i) => sum + (i.done/i.goal), 0) / oldData.green.length * 100) : 0
+                achieve: oldData.green.length ? Math.round(oldData.green.reduce((sum, i) => sum + (i.done/i.goal), 0) / oldData.green.length * 100) : 0
             };
             state.history = oldData.history || [];
             state.history.unshift(record);
         }
 
-        function save() { localStorage.setItem('lifeflow_hybrid', JSON.stringify(state)); }
+        function save() { localStorage.setItem('lifeflow_v72_storage', JSON.stringify(state)); }
 
         function openPage(id) { 
             if(id === 'blue') generateInsight();
@@ -170,25 +185,36 @@
 
         function closePage(id) { 
             document.getElementById('page-'+id).classList.remove('active');
-            setTimeout(() => document.getElementById('page-'+id).style.display = 'none', 300);
-            refreshUI(); 
+            setTimeout(() => {
+                document.getElementById('page-'+id).style.display = 'none';
+                refreshUI();
+            }, 300);
         }
 
         function addItem(type) {
             const name = prompt("项目名称:"); if(!name) return;
-            const num = prompt("每月目标次数:", "10"); if(!num) return;
+            const num = prompt("每月目标次数:", "10"); if(!num || isNaN(num)) return;
             state[type].push({ id: Date.now(), name, limit: parseInt(num), goal: parseInt(num), used: 0, done: 0, totalCost: 0 });
             save(); refreshUI();
+        }
+
+        // --- 新功能：删除项目 ---
+        function deleteItem(type, id) {
+            if (confirm("确定要删除这个项目吗？相关的次数记录将同步移除。")) {
+                state[type] = state[type].filter(i => i.id !== id);
+                save();
+                refreshUI();
+            }
         }
 
         function doAction(type, id) {
             const item = state[type].find(i => i.id === id);
             if (type === 'red') {
-                if (item.used >= item.limit) return alert("额度已尽！");
-                const price = prompt(`记录「${item.name}」，花费金额:`, "0");
+                if (item.used >= item.limit) return alert("额度已用完啦！");
+                const price = prompt(`记录「${item.name}」，本次花费金额:`, "0");
                 if (price === null) return;
                 item.used++;
-                item.totalCost += parseFloat(price || 0); // 版本 5 的金额累计逻辑 [cite: 259]
+                item.totalCost += parseFloat(price || 0);
             } else {
                 item.done++;
             }
@@ -202,27 +228,33 @@
                     <div style="font-size:14px; color:#888">本月总消费</div>
                     <div style="font-size:32px; font-weight:800; color:#FF3B30">¥ ${totalSpend.toFixed(2)}</div>
                     <div style="margin-top:15px; font-size:14px;">
-                        ${state.red.map(i => `<div>· ${i.name}: 耗 ${i.used} 次, 支出 ¥${i.totalCost.toFixed(2)}</div>`).join('')}
+                        ${state.red.map(i => `<div>· ${i.name}: 耗 ${i.used} 次, 支出 ¥${(i.totalCost||0).toFixed(2)}</div>`).join('')}
                     </div>
                 </div>
             `;
-            if (state.history.length) {
+            if (state.history && state.history.length) {
                 document.getElementById('history-archive').innerHTML = state.history.map(h => 
-                    `<div style="margin-bottom:8px;"><b>${h.title}</b>: 消费 ¥${h.cost}, 达成率 ${h.achieve}%</div>`).join('');
+                    `<div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                        <b>${h.title}</b>: 支出 ¥${h.cost}, 达成率 ${h.achieve}%
+                    </div>`).join('');
             }
         }
 
         function refreshUI() {
+            // 渲染消耗区
             document.getElementById('red-list').innerHTML = state.red.map(i => `
                 <div class="card">
+                    <button class="btn-delete" onclick="deleteItem('red', ${i.id})">×</button>
                     <div class="item-title"><span>${i.name}</span> <span style="color:#999">${i.used}/${i.limit}</span></div>
-                    <div class="item-money">已累计金额: ¥${(i.totalCost || 0).toFixed(2)}</div>
+                    <div class="item-money">本月累计: ¥${(i.totalCost || 0).toFixed(2)}</div>
                     <button class="btn-action btn-red" onclick="doAction('red', ${i.id})">记录一笔支出</button>
                 </div>
             `).join('');
 
+            // 渲染养成区
             document.getElementById('green-list').innerHTML = state.green.map(i => `
                 <div class="card">
+                    <button class="btn-delete" onclick="deleteItem('green', ${i.id})">×</button>
                     <div class="item-title"><span>${i.name}</span> <span style="color:#999">${i.done}/${i.goal}</span></div>
                     <div style="height:6px; background:#EEE; border-radius:3px; margin-top:10px; overflow:hidden">
                         <div style="width:${(i.done/i.goal)*100}%; height:100%; background:var(--green-zone)"></div>
@@ -231,6 +263,7 @@
                 </div>
             `).join('');
 
+            // 更新主页气泡数据
             const totalS = state.red.reduce((sum, i) => sum + (i.totalCost || 0), 0);
             document.getElementById('red-sub').innerText = `已花 ¥${totalS.toFixed(2)}`;
             const rate = state.green.length ? Math.round(state.green.reduce((sum, i) => sum + (i.done/i.goal), 0) / state.green.length * 100) : 0;
