@@ -3,114 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LifeFlow</title>
+    <title>LifeFlow Hybrid</title>
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         :root {
             --bg: #FBFBFD;
-            --red: rgba(255, 180, 190, 0.8);
-            --green: rgba(180, 210, 185, 0.8);
-            --blue: rgba(175, 195, 220, 0.8);
-            --text: #3A3A3C;
+            --red-zone: rgba(255, 180, 190, 0.75);
+            --green-zone: rgba(180, 210, 185, 0.75);
+            --blue-zone: rgba(175, 195, 220, 0.75);
+            --text-main: #3A3A3C;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
 
-        /* V4 经典动画 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; font-family: -apple-system, sans-serif;
+            background-color: var(--bg); color: var(--text-main);
+            height: 100vh; overflow: hidden;
+        }
+
+        /* --- 核心复刻：版本 4 浮动动画 [cite: 149, 150, 151] --- */
         @keyframes floatV4 {
             0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(5px, -10px) scale(1.02); }
-            66% { transform: translate(-5px, -5px) scale(0.98); }
+            33% { transform: translate(5px, -10px) scale(1.01); }
+            66% { transform: translate(-5px, -5px) scale(0.99); }
         }
 
-        #home-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; }
+        #home-screen {
+            height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
         .portal-layout { display: flex; flex-direction: column; align-items: center; gap: 40px; }
         .row-top { display: flex; gap: 30px; }
 
         .bubble {
             width: 140px; height: 140px; border-radius: 50%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 19px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;
-            cursor: pointer; active { transform: scale(0.95); transition: 0.1s; }
+            font-weight: 600; font-size: 18px;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.04);
+            text-align: center; cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .bubble:active { transform: scale(0.92); }
+
+        /* 应用版本 4 的动画频率与延迟 [cite: 152, 153, 154] */
+        .bubble-red { background: var(--red-zone); animation: floatV4 7s infinite ease-in-out; }
+        .bubble-green { background: var(--green-zone); animation: floatV4 8s infinite ease-in-out -1.5s; }
+        .bubble-blue { background: var(--blue-zone); animation: floatV4 9s infinite ease-in-out -3s; }
+
+        .bubble span { font-size: 11px; opacity: 0.6; margin-top: 5px; font-weight: 400; }
+
+        /* 二级页面基础样式 [cite: 228, 230] */
+        .page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 999;
+            display: none; flex-direction: column;
+            padding: calc(80px + env(safe-area-inset-top)) 20px 40px;
+            overflow-y: auto;
+        }
+        .page.active { display: flex; }
+
+        .btn-back {
+            position: fixed; top: calc(25px + env(safe-area-inset-top)); left: 20px;
+            font-size: 17px; font-weight: 600; border: none; background: none; color: #007AFF; z-index: 1000;
         }
 
-        .bubble-red { background: var(--red); animation: floatV4 7s infinite ease-in-out; }
-        .bubble-green { background: var(--green); animation: floatV4 8s infinite ease-in-out -1.5s; }
-        .bubble-blue { background: var(--blue); animation: floatV4 9s infinite ease-in-out -3s; }
-
-        /* 页面层级提升 */
-        .page { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background:var(--bg); z-index:999; 
-            display:none; flex-direction:column; 
-            padding: calc(85px + env(safe-area-inset-top)) 20px 40px; 
-            overflow-y:auto; 
-        }
-        .page.active { display:flex; animation: fadeIn 0.3s ease; }
+        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); position: relative; }
+        .item-title { font-size: 18px; font-weight: 700; display: flex; justify-content: space-between; }
+        .item-money { font-size: 14px; color: #FF9500; margin-top: 5px; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .btn-back { position:fixed; top:calc(20px + env(safe-area-inset-top)); left:20px; color:#007AFF; border:none; background:none; font-size:18px; z-index:1000; font-weight:600; padding: 10px; }
+        .btn-action { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 16px; font-weight: 700; margin-top: 15px; }
+        .btn-red { background: var(--red-zone); }
+        .btn-green { background: var(--green-zone); }
+        .btn-add { width: 100%; padding: 15px; border: 2px dashed #DDD; border-radius: 14px; background: none; color: #999; font-weight: 600; margin-top: 10px; }
         
-        .card { background:white; border-radius:24px; padding:20px; margin-bottom:15px; box-shadow:0 4px 15px rgba(0,0,0,0.03); position: relative; }
-        .btn-action { width:100%; padding:16px; border-radius:16px; border:none; font-size:16px; font-weight:700; margin-top:12px; color: #333; }
-        .btn-del { position: absolute; top: 15px; right: 15px; color: #FF3B30; opacity: 0.4; border:none; background:none; font-size:13px; }
-        
-        h1 { font-size: 32px; font-weight: 800; margin: 0 0 20px; }
-        .sub-data { font-size: 11px; opacity: 0.8; margin-top: 6px; font-weight: 400; }
+        .report-card { background: linear-gradient(135deg, #fff 0%, #f4f7f6 100%); border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.03); }
     </style>
 </head>
 <body>
 
-<div id="home-screen">
-    <div class="portal-layout">
-        <div class="row-top">
-            <div class="bubble bubble-red" onclick="openPage('red')">消耗区<span id="h-red" class="sub-data">¥ 0.00</span></div>
-            <div class="bubble bubble-green" onclick="openPage('green')">养成区<span id="h-green" class="sub-data">0%</span></div>
+    <div id="home-screen">
+        <div class="portal-layout">
+            <div class="row-top">
+                <div class="bubble bubble-red" onclick="openPage('red')">消耗区<span id="red-sub">已花 ¥0.00</span></div>
+                <div class="bubble bubble-green" onclick="openPage('green')">养成区<span id="green-sub">0% 进度</span></div>
+            </div>
+            <div class="bubble bubble-blue" onclick="openPage('blue')">复盘区<span>档案与简报</span></div>
         </div>
-        <div class="bubble bubble-blue" onclick="openPage('blue')">复盘区<span class="sub-data">账单明细</span></div>
     </div>
-</div>
 
-<div id="page-red" class="page">
-    <button class="btn-back" onclick="closePage('red')">← 返回</button>
-    <h1>消耗记录</h1>
-    <div id="red-list"></div>
-    <button onclick="addItem('red')" style="width:100%;padding:16px;border:2px dashed #ccc;background:none;border-radius:16px;color:#888;font-weight:600;margin-bottom:60px;">+ 新增项目</button>
-</div>
+    <div id="page-red" class="page">
+        <button class="btn-back" onclick="closePage('red')">完成</button>
+        <h1 style="margin-top:0">消耗记录</h1>
+        <div id="red-list"></div>
+        <button class="btn-add" onclick="addItem('red')">+ 新增限额项目</button>
+    </div>
 
-<div id="page-green" class="page">
-    <button class="btn-back" onclick="closePage('green')">← 返回</button>
-    <h1>成长目标</h1>
-    <div id="green-list"></div>
-    <button onclick="addItem('green')" style="width:100%;padding:16px;border:2px dashed #ccc;background:none;border-radius:16px;color:#888;font-weight:600;margin-bottom:60px;">+ 新增项目</button>
-</div>
+    <div id="page-green" class="page">
+        <button class="btn-back" onclick="closePage('green')">完成</button>
+        <h1 style="margin-top:0">目标挑战</h1>
+        <div id="green-list"></div>
+        <button class="btn-add" onclick="addItem('green')">+ 新增养成项目</button>
+    </div>
 
-<div id="page-blue" class="page">
-    <button class="btn-back" onclick="closePage('blue')">← 返回</button>
-    <h1>本月总结</h1>
-    <div id="insight-content"></div>
-</div>
+    <div id="page-blue" class="page">
+        <button class="btn-back" onclick="closePage('blue')">完成</button>
+        <h1 style="margin-top:0">本月简报</h1>
+        <div id="insight-area"></div>
+        <div class="card">
+            <h3>🕰️ 往期历史</h3>
+            <div id="history-archive" style="font-size:14px; color:#666;">暂无历史归档</div>
+        </div>
+    </div>
 
-<script>
-    let state = { red: [], green: [], month: new Date().getMonth() };
+    <script>
+        // --- 版本 5 核心逻辑 [cite: 244, 245] ---
+        let state = {
+            red: [], green: [], history: [], 
+            lastUpdateMonth: new Date().getMonth()
+        };
 
-    function init() {
-        try {
-            const saved = localStorage.getItem('lifeflow_v7_3');
+        function init() {
+            const saved = localStorage.getItem('lifeflow_hybrid');
             if (saved) {
-                state = JSON.parse(saved);
-                if (state.month !== new Date().getMonth()) {
-                    state.red.forEach(i => { i.used = 0; i.cost = 0; });
-                    state.green.forEach(i => { i.done = 0; });
-                    state.month = new Date().getMonth();
+                let parsed = JSON.parse(saved);
+                const currentMonth = new Date().getMonth();
+                if (parsed.lastUpdateMonth !== currentMonth) {
+                    archiveMonth(parsed); // 跨月自动归档 [cite: 245, 249]
+                    state.red = parsed.red.map(i => ({...i, used: 0, totalCost: 0}));
+                    state.green = parsed.green.map(i => ({...i, done: 0}));
+                    state.history = parsed.history || [];
+                    state.lastUpdateMonth = currentMonth;
+                } else {
+                    state = parsed;
                 }
             } else {
-                state.red = [{id:1, name:'外卖', limit:10, used:0, cost:0}];
-                state.green = [{id:2, name:'运动', goal:10, done:0}];
+                state.red = [{id: 1, name: '零食/奶茶', limit: 8, used: 0, totalCost: 0}];
+                state.green = [{id: 2, name: '健身运动', goal: 20, done: 0}];
             }
-        } catch (e) {
-            state = { red
+            refreshUI();
+        }
+
+        function archiveMonth(oldData) {
+            const months = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+            const record = {
+                title: months[oldData.lastUpdateMonth] + "总结",
+                cost: oldData.red.reduce((sum, i) => sum + (i.totalCost || 0), 0).toFixed(2),
+                achieve: oldData.green.length ? 
+                    Math.round(oldData.green.reduce((sum, i) => sum + (i.done/i.goal), 0) / oldData.green.length * 100) : 0
+            };
+            state.history = oldData.history || [];
+            state.history.unshift(record);
+        }
+
+        function save() { localStorage.setItem('lifeflow_hybrid', JSON.stringify(state)); }
+
+        function openPage(id) { 
+            if(id === 'blue') generateInsight();
+            document.getElementById('page-'+id).style.display = 'flex';
+            setTimeout(() => document.getElementById('page-'+id).classList.add('active'), 10);
+        }
+
+        function closePage(id) { 
+            document.getElementById('page-'+id).classList.remove('active');
+            setTimeout(() => document.getElementById('page-'+id).style.display = 'none', 300);
+            refreshUI(); 
+        }
+
+        function addItem(type) {
+            const name = prompt("项目名称:"); if(!name) return;
+            const num = prompt("每月目标次数:", "10"); if(!num) return;
+            state[type].push({ id: Date.now(), name, limit: parseInt(num), goal: parseInt(num), used: 0, done: 0, totalCost: 0 });
+            save(); refreshUI();
+        }
+
+        function doAction(type, id) {
+            const item = state[type].find(i => i.id === id);
+            if (type === 'red') {
+                if (item.used >= item.limit) return alert("额度已尽！");
+                const price = prompt(`记录「${item.name}」，花费金额:`, "0");
+                if (price === null) return;
+                item.used++;
+                item.totalCost += parseFloat(price || 0); // 版本 5 的金额累计逻辑 [cite: 259]
+            } else {
+                item.done++;
+            }
+            save(); refreshUI();
+        }
+
+        function generateInsight() {
+            const totalSpend = state.red.reduce((sum, i) => sum + (i.totalCost || 0), 0);
+            document.getElementById('insight-area').innerHTML = `
+                <div class="report-card">
+                    <div style="font-size:14px; color:#888">本月总消费</div>
+                    <div style="font-size:32px; font-weight:800; color:#FF3B30">¥ ${totalSpend.toFixed(2)}</div>
+                    <div style="margin-top:15px; font-size:14px;">
+                        ${state.red.map(i => `<div>· ${i.name}: 耗 ${i.used} 次, 支出 ¥${i.totalCost.toFixed(2)}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+            if (state.history.length) {
+                document.getElementById('history-archive').innerHTML = state.history.map(h => 
+                    `<div style="margin-bottom:8px;"><b>${h.title}</b>: 消费 ¥${h.cost}, 达成率 ${h.achieve}%</div>`).join('');
+            }
+        }
+
+        function refreshUI() {
+            document.getElementById('red-list').innerHTML = state.red.map(i => `
+                <div class="card">
+                    <div class="item-title"><span>${i.name}</span> <span style="color:#999">${i.used}/${i.limit}</span></div>
+                    <div class="item-money">已累计金额: ¥${(i.totalCost || 0).toFixed(2)}</div>
+                    <button class="btn-action btn-red" onclick="doAction('red', ${i.id})">记录一笔支出</button>
+                </div>
+            `).join('');
+
+            document.getElementById('green-list').innerHTML = state.green.map(i => `
+                <div class="card">
+                    <div class="item-title"><span>${i.name}</span> <span style="color:#999">${i.done}/${i.goal}</span></div>
+                    <div style="height:6px; background:#EEE; border-radius:3px; margin-top:10px; overflow:hidden">
+                        <div style="width:${(i.done/i.goal)*100}%; height:100%; background:var(--green-zone)"></div>
+                    </div>
+                    <button class="btn-action btn-green" onclick="doAction('green', ${i.id})">完成一次打卡</button>
+                </div>
+            `).join('');
+
+            const totalS = state.red.reduce((sum, i) => sum + (i.totalCost || 0), 0);
+            document.getElementById('red-sub').innerText = `已花 ¥${totalS.toFixed(2)}`;
+            const rate = state.green.length ? Math.round(state.green.reduce((sum, i) => sum + (i.done/i.goal), 0) / state.green.length * 100) : 0;
+            document.getElementById('green-sub').innerText = `${rate}% 进度`;
+        }
+
+        init();
+    </script>
+</body>
+</html>
