@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LifeFlow V6</title>
+    <title>LifeFlow V6.1</title>
     <link rel="apple-touch-icon" href="icon.png"> 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,33 +20,62 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text-main); height: 100vh; overflow: hidden; }
 
-        /* 主页布局 */
+        /* --- 核心修复：重新注入流动动画 --- */
+        @keyframes flowFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(6px, -12px) scale(1.02); }
+            66% { transform: translate(-6px, -6px) scale(0.98); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
         #home-screen { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .portal-layout { display: flex; flex-direction: column; align-items: center; gap: 6vh; }
         .row-top { display: flex; gap: 10vw; }
-        .bubble { width: 40vw; height: 40vw; max-width: 160px; max-height: 160px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; box-shadow: 0 15px 35px rgba(0,0,0,0.05); transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; }
+
+        .bubble { 
+            width: 40vw; height: 40vw; max-width: 160px; max-height: 160px; 
+            border-radius: 50%; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; font-weight: 600; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05); 
+            text-align: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            /* 默认动画 */
+            animation: flowFloat 8s infinite ease-in-out;
+        }
+
+        /* 为三个球设置不同的动画时长和延迟，制造交错的流动感 */
+        .bubble-red { 
+            background: var(--red-zone); 
+            animation-duration: 7s; 
+        }
+        .bubble-green { 
+            background: var(--green-zone); 
+            animation-duration: 9s; 
+            animation-delay: -1s;
+        }
+        .bubble-blue { 
+            background: var(--blue-zone); 
+            animation-duration: 11s; 
+            animation-delay: -2s;
+        }
+
         .bubble span { font-size: 11px; opacity: 0.6; margin-top: 5px; font-weight: 400; }
-        .bubble-red { background: var(--red-zone); }
-        .bubble-green { background: var(--green-zone); }
-        .bubble-blue { background: var(--blue-zone); }
 
         /* 页面框架 */
         .page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; display: none; flex-direction: column; padding: calc(80px + env(safe-area-inset-top)) 20px 40px; overflow-y: auto; }
         .page.active { display: flex; }
         .btn-back { position: fixed; top: calc(25px + env(safe-area-inset-top)); left: 20px; font-size: 17px; background: none; border: none; color: #007AFF; z-index: 110; }
         
-        /* 卡片设计 */
+        /* 卡片及按钮样式保持 V6 逻辑 */
         .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); position: relative; }
         .item-title { font-size: 18px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
         .item-money { font-size: 14px; color: #FF9500; margin-top: 5px; }
-        
-        /* 功能按钮 */
         .btn-del { font-size: 12px; color: var(--danger); opacity: 0.4; border: none; background: none; padding: 5px; font-weight: 400; }
         .btn-action { width: 100%; padding: 15px; border-radius: 14px; border: none; font-size: 16px; font-weight: 600; margin-top: 15px; }
         .btn-red { background: var(--red-zone); }
         .btn-green { background: var(--green-zone); }
         .btn-add { width: 100%; padding: 15px; border: 2px dashed #DDD; border-radius: 14px; background: none; color: #999; font-weight: 600; margin-top: 10px; margin-bottom: 50px; }
-        
         .report-card { background: linear-gradient(135deg, #fff 0%, #f4f7f6 100%); border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.03); }
     </style>
 </head>
@@ -87,6 +116,7 @@
 </div>
 
 <script>
+    // JS 逻辑保持 V6 版本的同名校验和删除功能
     let state = {
         red: [], green: [], history: [], lastUpdateMonth: new Date().getMonth()
     };
@@ -131,31 +161,25 @@
     }
     function closePage(id) { document.getElementById('page-'+id).classList.remove('active'); refreshUI(); }
 
-    // --- 升级：带同名校验的新增逻辑 ---
     function addItem(type) {
         let name = prompt("项目名称 (如: 外卖)"); 
         if(!name) return;
         name = name.trim();
-
-        // 同名校验
         const isDuplicate = state[type].some(item => item.name === name);
         if (isDuplicate) {
-            alert(`「${name}」已经存在啦，换个名字或者直接在原项目记录吧！`);
+            alert(`「${name}」已经存在啦！`);
             return;
         }
-
-        const num = prompt("每月次数 (如: 10)", "10"); 
+        const num = prompt("每月次数", "10"); 
         if(!num || isNaN(num)) return;
-
         const newItem = { id: Date.now(), name, limit: parseInt(num), goal: parseInt(num), used: 0, done: 0, totalCost: 0 };
         state[type].push(newItem);
         save(); refreshUI();
     }
 
-    // --- 升级：删除功能 ---
     function deleteItem(type, id) {
         const item = state[type].find(i => i.id === id);
-        if (confirm(`确定要删除「${item.name}」吗？相关记录也会消失哦。`)) {
+        if (confirm(`确定要删除「${item.name}」吗？`)) {
             state[type] = state[type].filter(i => i.id !== id);
             save(); refreshUI();
         }
@@ -165,7 +189,7 @@
         const item = state[type].find(i => i.id === id);
         if (type === 'red') {
             if (item.used >= item.limit) return alert("额度已用尽！");
-            const price = prompt(`记录一笔「${item.name}」，花了多少钱？`, "0");
+            const price = prompt(`记录一笔「${item.name}」，多少钱？`, "0");
             if (price === null) return;
             item.used++;
             item.totalCost += parseFloat(price || 0);
@@ -183,14 +207,13 @@
                 <div style="font-size:14px; color:#888">本月总消费</div>
                 <div style="font-size:32px; font-weight:800; color:var(--danger)">¥ ${totalSpend.toFixed(2)}</div>
                 <div style="margin-top:15px; font-size:14px; line-height:1.6;">
-                    ${state.red.map(i => `<div>· ${i.name}: 耗 ${i.used} 次, 支出 ¥${i.totalCost.toFixed(2)}</div>`).join('')}
+                    ${state.red.map(i => `<div>· ${i.name}: ${i.used}次, ¥${i.totalCost.toFixed(2)}</div>`).join('')}
                 </div>
             </div>
         `;
         const historyArea = document.getElementById('history-archive');
         historyArea.innerHTML = state.history.length ? 
-            state.history.map(h => `<div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #F0F0F0"><b>${h.title}</b><br>总支出: ¥${h.cost} | 达成率: ${h.achieve}%</div>`).join('') 
-            : "暂无历史归档";
+            state.history.map(h => `<div style="margin-bottom:10px;"><b>${h.title}</b>: ¥${h.cost} | ${h.achieve}%</div>`).join('') : "暂无归档";
     }
 
     function refreshUI() {
@@ -198,13 +221,10 @@
             <div class="card">
                 <div class="item-title">
                     <span>${i.name}</span> 
-                    <div>
-                        <span style="color:#999; margin-right:10px;">${i.used}/${i.limit}</span>
-                        <button class="btn-del" onclick="deleteItem('red', ${i.id})">删除</button>
-                    </div>
+                    <div><span style="color:#999; margin-right:10px;">${i.used}/${i.limit}</span><button class="btn-del" onclick="deleteItem('red', ${i.id})">删除</button></div>
                 </div>
-                <div class="item-money">已累计: ¥${(i.totalCost || 0).toFixed(2)}</div>
-                <button class="btn-action btn-red" onclick="doAction('red', ${i.id})">记录一次支出</button>
+                <div class="item-money">¥${(i.totalCost || 0).toFixed(2)}</div>
+                <button class="btn-action btn-red" onclick="doAction('red', ${i.id})">记录</button>
             </div>
         `).join('');
 
@@ -212,15 +232,12 @@
             <div class="card">
                 <div class="item-title">
                     <span>${i.name}</span> 
-                    <div>
-                        <span style="color:#999; margin-right:10px;">${i.done}/${i.goal}</span>
-                        <button class="btn-del" onclick="deleteItem('green', ${i.id})">删除</button>
-                    </div>
+                    <div><span style="color:#999; margin-right:10px;">${i.done}/${i.goal}</span><button class="btn-del" onclick="deleteItem('green', ${i.id})">删除</button></div>
                 </div>
                 <div style="height:6px; background:#EEE; border-radius:3px; margin-top:10px; overflow:hidden">
                     <div style="width:${(i.done/i.goal)*100}%; height:100%; background:var(--green-zone)"></div>
                 </div>
-                <button class="btn-action btn-green" onclick="doAction('green', ${i.id})">完成一次打卡</button>
+                <button class="btn-action btn-green" onclick="doAction('green', ${i.id})">完成</button>
             </div>
         `).join('');
 
